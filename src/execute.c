@@ -294,14 +294,30 @@ void create_process(CommandHolder holder) {
                                                // is true
 
   // TODO: Remove warning silencers
-  (void) p_in;  // Silence unused variable warning
-  (void) p_out; // Silence unused variable warning
-  (void) r_in;  // Silence unused variable warning
-  (void) r_out; // Silence unused variable warning
-  (void) r_app; // Silence unused variable warning
+  //(void) p_in;  // Silence unused variable warning
+  //(void) p_out; // Silence unused variable warning
+  //(void) r_in;  // Silence unused variable warning
+  //(void) r_out; // Silence unused variable warning
+  //(void) r_app; // Silence unused variable warning
+  pid_t pid;
+  int pPipe[2], cPipe[2];
 
+  pipe(pPipe);
+  pipe(cPipe);
+
+  pid = fork();
+
+  if (pid==0) {
+    child_run_command(holder.cmd);
+  } else if (pid > 0) {
+    parent_run_command(holder.cmd);
+  } else {
+    return;
+  }
+
+  
   // TODO: Setup pipes, redirects, and new process
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
 
   //parent_run_command(holder.cmd); // This should be done in the parent branch of
                                   // a fork
