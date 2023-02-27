@@ -12,14 +12,17 @@
 #include <stdio.h>
 
 #include "quash.h"
+#include "deque.h"
+
+IMPLEMENT_DEQUE(jobQue, int)
+//#define IMPLEMENT_DEQUE_STRUCT(pidQue, pid_t)
 
 //IDK if we're allowed to include these...
-
-
 #include <string.h>
 #include <sys/wait.h>
 
-
+bool jobQueInitialized = false;
+jobQue myQue;
 /*My Stuff
   #define IMPLEMENT_DEQUE(jobQue, quashJob)
   #define IMPLEMENT_DEQUE(pidQue, pid_t)
@@ -124,8 +127,7 @@ void run_echo(EchoCommand cmd) {
   // TODO: Implement echo
   //IMPLEMENT_ME();
   for (int i = 0; str[i] != NULL; ++i) {
-    printf(str[i]);
-    printf(" ");
+    printf("%s ", str[i]);
   }
   printf("\n");
 
@@ -355,6 +357,12 @@ void create_process(CommandHolder holder) {
 
 // Run a list of commands
 void run_script(CommandHolder* holders) {
+  if (!jobQueInitialized) {
+    myQue = new_jobQue(1000);
+    jobQueInitialized = true;
+  }
+
+  
   if (holders == NULL)
     return;
 

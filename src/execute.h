@@ -11,16 +11,17 @@
 #include <unistd.h>
 
 #include "command.h"
+#include "deque.h"
 
-struct quashJob {
-  int jobID;
-  pid_t pidID;
-  const char* cmd;
-};
+// struct quashJob {
+//   int jobID;
+//   pid_t pidID;
+//   const char* cmd;
+// };
 
-//#define IMPLEMENT_DEQUE_STRUCT(jobQue, quashJob)
+IMPLEMENT_DEQUE_STRUCT(jobQue, int)
 //#define IMPLEMENT_DEQUE_STRUCT(pidQue, pid_t)
-//#define PROTOTYPE_DEQUE(jobQue, quashJob)
+PROTOTYPE_DEQUE(jobQue, int)
 //#define PROTOTYPE_DEQUE(pidQue, pid_t)
 
 /**
