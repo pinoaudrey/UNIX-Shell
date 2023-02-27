@@ -12,6 +12,17 @@
 
 #include "command.h"
 
+struct quashJob {
+  int jobID;
+  pid_t pidID;
+  const char* cmd;
+};
+
+//#define IMPLEMENT_DEQUE_STRUCT(jobQue, quashJob)
+//#define IMPLEMENT_DEQUE_STRUCT(pidQue, pid_t)
+//#define PROTOTYPE_DEQUE(jobQue, quashJob)
+//#define PROTOTYPE_DEQUE(pidQue, pid_t)
+
 /**
  * @brief Function to get environment variable values
  *

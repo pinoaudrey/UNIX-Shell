@@ -13,6 +13,16 @@
 
 #include "quash.h"
 
+//IDK if we're allowed to include these...
+#include <string.h>
+#include <sys/wait.h>
+
+
+/*My Stuff
+  #define IMPLEMENT_DEQUE(jobQue, quashJob)
+  #define IMPLEMENT_DEQUE(pidQue, pid_t)
+*/
+
 // Remove this and all expansion calls to it
 /**
  * @brief Note calls to any function that requires implementation
@@ -23,7 +33,7 @@
 /***************************************************************************
  * Interface Functions
  ***************************************************************************/
-#define BSIZE 256
+#define BSIZE 1024
 
 // Return a string containing the current working directory.
 char* get_current_directory(bool* should_free) {
@@ -31,7 +41,6 @@ char* get_current_directory(bool* should_free) {
   // HINT: This should be pretty simple
   // Change this to true if necessary
   *should_free = true;
-
   return getcwd(NULL, BSIZE);
 }
 
@@ -41,9 +50,9 @@ const char* lookup_env(const char* env_var) {
   // to interpret variables from the command line and display the prompt
   // correctly
   // HINT: This should be pretty simple
-const char* value = getenv(env_var);
+  const char* value = getenv(env_var);
   // TODO: Remove warning silencers
-  (void) env_var; // Silence unused variable warning
+  //(void) env_var; // Silence unused variable warning
 
   return value;
 }
@@ -91,11 +100,12 @@ void run_generic(GenericCommand cmd) {
   char** args = cmd.args;
 
   // TODO: Remove warning silencers
-  (void) exec; // Silence unused variable warning
-  (void) args; // Silence unused variable warning
+  //(void) exec; // Silence unused variable warning
+  //(void) args; // Silence unused variable warning
 
   // TODO: Implement run generic
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
+  execvp(exec, args);
 
   perror("ERROR: Failed to execute program");
 }
@@ -107,10 +117,19 @@ void run_echo(EchoCommand cmd) {
   char** str = cmd.args;
 
   // TODO: Remove warning silencers
-  (void) str; // Silence unused variable warning
+  //(void) str; // Silence unused variable warning
 
   // TODO: Implement echo
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
+  // for (int i = 0; str[i] != NULL; i++) {
+  //   printf("%s", str[i]);
+  // }
+  // char cmdbuf[BSIZE];
+  // bzero(cmdbuf, BSIZE);
+  // sprintf(cmdbuf, "%s %s -name \'*\'.[ch]", FIND_EXEC, argv[1]);
+
+  //doesn't work...
+  execvp("echo", str);
 
   // Flush the buffer before returning
   fflush(stdout);
@@ -294,11 +313,13 @@ void create_process(CommandHolder holder) {
                                                // is true
 
   // TODO: Remove warning silencers
-  //(void) p_in;  // Silence unused variable warning
-  //(void) p_out; // Silence unused variable warning
-  //(void) r_in;  // Silence unused variable warning
-  //(void) r_out; // Silence unused variable warning
-  //(void) r_app; // Silence unused variable warning
+  (void) p_in;  // Silence unused variable warning
+  (void) p_out; // Silence unused variable warning
+  (void) r_in;  // Silence unused variable warning
+  (void) r_out; // Silence unused variable warning
+  (void) r_app; // Silence unused variable warning
+  
+  int status;
   pid_t pid;
   int pPipe[2], cPipe[2];
 
@@ -310,6 +331,9 @@ void create_process(CommandHolder holder) {
   if (pid==0) {
     child_run_command(holder.cmd);
   } else if (pid > 0) {
+    if ((waitpid(pid, &status, 0)) == -1) {
+      fprintf(stderr, "Child Process encountered an error!");
+    }
     parent_run_command(holder.cmd);
   } else {
     return;
@@ -346,7 +370,8 @@ void run_script(CommandHolder* holders) {
   if (!(holders[0].flags & BACKGROUND)) {
     // Not a background Job
     // TODO: Wait for all processes under the job to complete
-    IMPLEMENT_ME();
+    //IMPLEMENT_ME();
+    
   }
   else {
     // A background job.
