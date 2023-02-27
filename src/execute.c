@@ -14,6 +14,8 @@
 #include "quash.h"
 
 //IDK if we're allowed to include these...
+
+
 #include <string.h>
 #include <sys/wait.h>
 
@@ -120,7 +122,13 @@ void run_echo(EchoCommand cmd) {
   //(void) str; // Silence unused variable warning
 
   // TODO: Implement echo
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
+  for (int i = 0; str[i] != NULL; ++i) {
+    printf(str[i]);
+    printf(" ");
+  }
+  printf("\n");
+
 
   // Flush the buffer before returning
   fflush(stdout);
