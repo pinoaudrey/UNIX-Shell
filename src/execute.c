@@ -104,7 +104,8 @@ void run_generic(GenericCommand cmd) {
   //(void) args; // Silence unused variable warning
 
   // TODO: Implement run generic
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
+  execvp(exec, args);
 
   perror("ERROR: Failed to execute program");
 }
@@ -329,6 +330,9 @@ void create_process(CommandHolder holder) {
   if (pid==0) {
     child_run_command(holder.cmd);
   } else if (pid > 0) {
+    if((waitpid(pid, &status, 0)) == -1) {
+      fprintf(stderr, "Child Process had an error!");
+    }
     parent_run_command(holder.cmd);
   } 
 
