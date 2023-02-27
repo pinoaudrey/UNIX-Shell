@@ -104,8 +104,7 @@ void run_generic(GenericCommand cmd) {
   //(void) args; // Silence unused variable warning
 
   // TODO: Implement run generic
-  //IMPLEMENT_ME();
-  execvp(exec, args);
+  IMPLEMENT_ME();
 
   perror("ERROR: Failed to execute program");
 }
@@ -120,16 +119,7 @@ void run_echo(EchoCommand cmd) {
   //(void) str; // Silence unused variable warning
 
   // TODO: Implement echo
-  //IMPLEMENT_ME();
-  // for (int i = 0; str[i] != NULL; i++) {
-  //   printf("%s", str[i]);
-  // }
-  // char cmdbuf[BSIZE];
-  // bzero(cmdbuf, BSIZE);
-  // sprintf(cmdbuf, "%s %s -name \'*\'.[ch]", FIND_EXEC, argv[1]);
-
-  //doesn't work...
-  execvp("echo", str);
+  IMPLEMENT_ME();
 
   // Flush the buffer before returning
   fflush(stdout);
@@ -142,12 +132,13 @@ void run_export(ExportCommand cmd) {
   const char* val = cmd.val;
 
   // TODO: Remove warning silencers
-  (void) env_var; // Silence unused variable warning
-  (void) val;     // Silence unused variable warning
+  //(void) env_var; // Silence unused variable warning
+  //(void) val;     // Silence unused variable warning
 
   // TODO: Implement export.
   // HINT: This should be quite simple.
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
+  setenv(env_var, val, 1);
 }
 
 // Changes the current working directory
@@ -166,7 +157,9 @@ void run_cd(CDCommand cmd) {
   // TODO: Update the PWD environment variable to be the new current working
   // directory and optionally update OLD_PWD environment variable to be the old
   // working directory.
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
+  char* newDirectory = getcwd(NULL, BSIZE);
+  chdir(dir);
 }
 
 // Sends a signal to all processes contained in a job
@@ -186,8 +179,13 @@ void run_kill(KillCommand cmd) {
 // Prints the current working directory to stdout
 void run_pwd() {
   // TODO: Print the current working directory
-  IMPLEMENT_ME();
-
+  //IMPLEMENT_ME();
+  bool should_free;
+  char* currentDirectory = get_current_directory(&should_free);
+  printf("%s\n", currentDirectory);
+  if(should_free) {
+    free(currentDirectory);
+  }
   // Flush the buffer before returning
   fflush(stdout);
 }
@@ -331,13 +329,8 @@ void create_process(CommandHolder holder) {
   if (pid==0) {
     child_run_command(holder.cmd);
   } else if (pid > 0) {
-    if ((waitpid(pid, &status, 0)) == -1) {
-      fprintf(stderr, "Child Process encountered an error!");
-    }
     parent_run_command(holder.cmd);
-  } else {
-    return;
-  }
+  } 
 
   
   // TODO: Setup pipes, redirects, and new process
