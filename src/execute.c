@@ -14,19 +14,21 @@
 #include "quash.h"
 #include "deque.h"
 
-IMPLEMENT_DEQUE(jobQue, int)
-//#define IMPLEMENT_DEQUE_STRUCT(pidQue, pid_t)
+
+IMPLEMENT_DEQUE(pidQue, pid_t)
+IMPLEMENT_DEQUE(jobQue, QuashJob)
 
 //IDK if we're allowed to include these...
 #include <string.h>
 #include <sys/wait.h>
 
 bool jobQueInitialized = false;
-jobQue myQue;
-/*My Stuff
-  #define IMPLEMENT_DEQUE(jobQue, quashJob)
-  #define IMPLEMENT_DEQUE(pidQue, pid_t)
-*/
+
+jobQue myJobQue; //To store jobs in the que
+
+pidQue myPIDs; //To temperarily store pids until moved into a QuashJob struct
+
+int jobCount = 0; //to generate job numbers?
 
 // Remove this and all expansion calls to it
 /**
@@ -68,6 +70,62 @@ void check_jobs_bg_status() {
   // jobs. This function should remove jobs from the jobs queue once all
   // processes belonging to a job have completed.
   IMPLEMENT_ME();
+  
+  QuashJob currJob; //variable to store the current job in iteration
+
+  if (jobQueInitialized) { //just a failsafe to ensure that the jobQue actually exists
+
+    for (int i = 0; i < length_jobQue(&myJobQue); ++i){ //Iterate through all QuashJobs in myJobQue
+
+      currJob = pop_front_jobQue(&myJobQue); //get the curr QuashJob
+
+      print_job(currJob.jobID, 1, currJob.cmd); //test print
+
+      //pidQue *pidList = currJob.pids; //Get the pids list belonging to the job
+      pid_t currPID; //Set up a variable to store the working current pid
+
+      //currPID = pop_front_pidQue(pidList); //test print
+      print_job(currJob.jobID, peek_front_pidQue(currJob.pids), currJob.cmd); //test print
+
+      bool jobDone = true; //assume the job is done (will be changed in loop if not)
+
+      for (int i = 0; i < length_pidQue(currJob.pids); ++i) {
+        int status;
+        currPID = pop_front_pidQue(currJob.pids);
+
+        print_job(currJob.jobID, currPID, currJob.cmd); 
+
+        pid_t check_pid = waitpid(currPID, &status, WNOHANG); //should check if the process is still running
+        
+        if (check_pid < 0) {
+          /*
+            Process terminated with an error.
+          */
+        } else if (check_pid == 0) {
+          /*
+            The child process is still running.
+          */
+          jobDone = false;
+          push_back_pidQue(currJob.pids, currPID); //add back to pidQue, since still needed
+        } else {
+          /*
+            The child process is done.
+          */
+          push_back_pidQue(currJob.pids, check_pid); //add back to pidQue to track finished processes
+          //This might result in an error, as I'm unsure about what happens if you wait on a child
+          //process that has already terminated...
+        }
+      }
+      if (jobDone) {
+        //currPID = pop_front_pidQue(pidList);
+        print_job_bg_complete(currJob.jobID, currPID, currJob.cmd);
+      } else {
+       push_back_jobQue(&myJobQue, currJob);
+      }
+    }
+  } else {
+    printf("Job Que is Empty! Remove this line!");
+  }
 
   // TODO: Once jobs are implemented, uncomment and fill the following line
   // print_job_bg_complete(job_id, pid, cmd);
@@ -204,7 +262,16 @@ void run_pwd() {
 // Prints all background jobs currently in the job list to stdout
 void run_jobs() {
   // TODO: Print background jobs
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
+
+  QuashJob currJob;
+  for (int i = 0; i < length_jobQue(&myJobQue); ++i) {
+    currJob = pop_front_jobQue(&myJobQue);
+    pidQue *pidList = currJob.pids;
+    pid_t firstPID = peek_front_pidQue(pidList);
+    print_job(currJob.jobID, firstPID, currJob.cmd);
+    push_back_jobQue(&myJobQue, currJob);
+  }
 
   // Flush the buffer before returning
   fflush(stdout);
@@ -312,7 +379,7 @@ void parent_run_command(Command cmd) {
  *
  * @sa Command CommandHolder
  */
-void create_process(CommandHolder holder) {
+void create_process(CommandHolder holder, pidQue * parentPidQue) {
   // Read the flags field from the parser
   bool p_in  = holder.flags & PIPE_IN;
   bool p_out = holder.flags & PIPE_OUT;
@@ -340,9 +407,7 @@ void create_process(CommandHolder holder) {
   if (pid==0) {
     child_run_command(holder.cmd);
   } else if (pid > 0) {
-    if((waitpid(pid, &status, 0)) == -1) {
-      fprintf(stderr, "Child Process had an error!");
-    }
+    push_back_pidQue(parentPidQue, pid);
     parent_run_command(holder.cmd);
   } 
 
@@ -357,11 +422,21 @@ void create_process(CommandHolder holder) {
 
 // Run a list of commands
 void run_script(CommandHolder* holders) {
+  
+  //Initialize the global myJobQue if uninitialized
   if (!jobQueInitialized) {
-    myQue = new_jobQue(1000);
+    myJobQue = new_jobQue(100);
     jobQueInitialized = true;
   }
 
+  //Test Code
+  // pidQue myPidQue = new_pidQue(100);
+  // push_back_pidQue(&myPidQue, 1);
+  // QuashJob currentJob = {.jobID = 1, .pids = &myPidQue, .cmd = "Hello World!"};
+  // push_back_jobQue(&myJobQue, currentJob);
+  // QuashJob myJob;
+  // myJob = pop_front_jobQue(&myJobQue);
+  // print_job(myJob.jobID, 1, myJob.cmd);
   
   if (holders == NULL)
     return;
@@ -374,24 +449,41 @@ void run_script(CommandHolder* holders) {
     return;
   }
 
+  //Create an empty pidQue
+  pidQue myPidQue;
+  myPidQue = new_pidQue(100);
+
   CommandType type;
 
   // Run all commands in the `holder` array
   for (int i = 0; (type = get_command_holder_type(holders[i])) != EOC; ++i)
-    create_process(holders[i]);
+    create_process(holders[i], &myPidQue);
+
+  //Creates a new QuashJob variabe to store the new job
+  ++jobCount;
+  QuashJob myJob = {.jobID = jobCount, .pids = &myPidQue, .cmd = "Test String"}; //This is incorrect, need the string for the cmd
 
   if (!(holders[0].flags & BACKGROUND)) {
     // Not a background Job
     // TODO: Wait for all processes under the job to complete
     //IMPLEMENT_ME();
-    
+
+    int status;
+    for (int i = 0; i < length_pidQue(&myPidQue); ++i) {
+      pid_t currPid = pop_front_pidQue(&myPidQue);
+      waitpid(currPid, &status, 0);
+    }
+    destroy_pidQue(&myPidQue);
   }
+
   else {
     // A background job.
     // TODO: Push the new job to the job queue
-    IMPLEMENT_ME();
+    //IMPLEMENT_ME();
+    
+    push_back_jobQue(&myJobQue, myJob); //Adds current job to the queue
 
     // TODO: Once jobs are implemented, uncomment and fill the following line
-    // print_job_bg_start(job_id, pid, cmd);
+    print_job_bg_start(myJob.jobID, peek_front_pidQue(myJob.pids), myJob.cmd);
   }
 }
