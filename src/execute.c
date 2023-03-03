@@ -69,7 +69,7 @@ void check_jobs_bg_status() {
   // TODO: Check on the statuses of all processes belonging to all background
   // jobs. This function should remove jobs from the jobs queue once all
   // processes belonging to a job have completed.
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
   
   QuashJob currJob; //variable to store the current job in iteration
 
@@ -208,7 +208,9 @@ void run_export(ExportCommand cmd) {
   // TODO: Implement export.
   // HINT: This should be quite simple.
   //IMPLEMENT_ME();
-  setenv(env_var, val, 1);
+  if(setenv(env_var, val, 1)){
+    perror("ERROR: Failed to set environment variable");
+  }
 }
 
 // Changes the current working directory
@@ -222,14 +224,25 @@ void run_cd(CDCommand cmd) {
     return;
   }
 
+  if(chdir(dir) != 0) {
+    perror("ERROR: Failed to change directory");
+    return;
+  }
+
+  const char* oldPWD = getenv("PWD");
+
+  if(setenv("OLD_PWD", oldPWD, 1) != 0) {
+    return;
+  }
+  if(setenv("PWD", dir, 1) != 0) {
+    return;
+  }
   // TODO: Change directory
 
   // TODO: Update the PWD environment variable to be the new current working
   // directory and optionally update OLD_PWD environment variable to be the old
   // working directory.
   //IMPLEMENT_ME();
-  char* newDirectory = getcwd(NULL, BSIZE);
-  chdir(dir);
 }
 
 // Sends a signal to all processes contained in a job
