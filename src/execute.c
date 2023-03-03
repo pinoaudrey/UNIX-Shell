@@ -79,21 +79,21 @@ void check_jobs_bg_status() {
 
       currJob = pop_front_jobQue(&myJobQue); //get the curr QuashJob
 
-      print_job(currJob.jobID, 1, currJob.cmd); //test print
+      //print_job(currJob.jobID, 1, currJob.cmd); //test print
 
       //pidQue *pidList = currJob.pids; //Get the pids list belonging to the job
       pid_t currPID; //Set up a variable to store the working current pid
 
       //currPID = pop_front_pidQue(pidList); //test print
-      print_job(currJob.jobID, peek_front_pidQue(currJob.pids), currJob.cmd); //test print
+      //print_job(currJob.jobID, peek_front_pidQue(&currJob.pids), currJob.cmd); //test print
 
       bool jobDone = true; //assume the job is done (will be changed in loop if not)
 
-      for (int i = 0; i < length_pidQue(currJob.pids); ++i) {
+      for (int i = 0; i < length_pidQue(&currJob.pids); ++i) {
         int status;
-        currPID = pop_front_pidQue(currJob.pids);
+        currPID = pop_front_pidQue(&currJob.pids);
 
-        print_job(currJob.jobID, currPID, currJob.cmd); 
+        //print_job(currJob.jobID, currPID, currJob.cmd); 
 
         pid_t check_pid = waitpid(currPID, &status, WNOHANG); //should check if the process is still running
         
@@ -106,16 +106,17 @@ void check_jobs_bg_status() {
             The child process is still running.
           */
           jobDone = false;
-          push_back_pidQue(currJob.pids, currPID); //add back to pidQue, since still needed
+          push_back_pidQue(&currJob.pids, currPID); //add back to pidQue, since still needed
         } else {
           /*
             The child process is done.
           */
-          push_back_pidQue(currJob.pids, check_pid); //add back to pidQue to track finished processes
+          push_back_pidQue(&currJob.pids, check_pid); //add back to pidQue to track finished processes
           //This might result in an error, as I'm unsure about what happens if you wait on a child
           //process that has already terminated...
         }
       }
+
       if (jobDone) {
         //currPID = pop_front_pidQue(pidList);
         print_job_bg_complete(currJob.jobID, currPID, currJob.cmd);
@@ -267,7 +268,7 @@ void run_jobs() {
   QuashJob currJob;
   for (int i = 0; i < length_jobQue(&myJobQue); ++i) {
     currJob = pop_front_jobQue(&myJobQue);
-    pidQue *pidList = currJob.pids;
+    pidQue *pidList = &currJob.pids;
     pid_t firstPID = peek_front_pidQue(pidList);
     print_job(currJob.jobID, firstPID, currJob.cmd);
     push_back_jobQue(&myJobQue, currJob);
@@ -461,7 +462,7 @@ void run_script(CommandHolder* holders) {
 
   //Creates a new QuashJob variabe to store the new job
   ++jobCount;
-  QuashJob myJob = {.jobID = jobCount, .pids = &myPidQue, .cmd = "Test String"}; //This is incorrect, need the string for the cmd
+  QuashJob myJob = {.jobID = jobCount, .pids = myPidQue, .cmd = "Test String"}; //This is incorrect, need the string for the cmd
 
   if (!(holders[0].flags & BACKGROUND)) {
     // Not a background Job
@@ -484,6 +485,6 @@ void run_script(CommandHolder* holders) {
     push_back_jobQue(&myJobQue, myJob); //Adds current job to the queue
 
     // TODO: Once jobs are implemented, uncomment and fill the following line
-    print_job_bg_start(myJob.jobID, peek_front_pidQue(myJob.pids), myJob.cmd);
+    print_job_bg_start(myJob.jobID, peek_front_pidQue(&myJob.pids), myJob.cmd);
   }
 }

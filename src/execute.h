@@ -22,7 +22,7 @@ PROTOTYPE_DEQUE(pidQue, pid_t)
 
 typedef struct QuashJobs {
   int jobID;
-  pidQue *pids;
+  pidQue pids;
   const char* cmd;
 } QuashJob;
 
