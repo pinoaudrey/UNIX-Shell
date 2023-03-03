@@ -243,6 +243,18 @@ void run_kill(KillCommand cmd) {
 
   // TODO: Kill all processes associated with a background job
   IMPLEMENT_ME();
+
+  for (int i = 0; i < length_jobQue(&myJobQue); ++i) { //Iterate through the job list
+    QuashJob currJob = pop_front_jobQue(&myJobQue); //get the current QuashJob
+    if (currJob.jobID == job_id) { // if the currJob is the job we would like to kill
+      for (int i = 0; i < length_pidQue(&currJob.pids); ++i) { //iterate through the job's pidQue
+        kill(pop_back_pidQue(&currJob.pids)); //kills each process in the job
+      }
+    } else { //if the currJob isn't the job we want to kill
+        push_back_jobQue(&myJobQue, currJob);
+    }
+  }
+  
 }
 
 
@@ -408,8 +420,8 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
   if (pid==0) {
     child_run_command(holder.cmd);
   } else if (pid > 0) {
-    push_back_pidQue(parentPidQue, pid);
     parent_run_command(holder.cmd);
+    push_back_pidQue(parentPidQue, pid);
   } 
 
   
@@ -460,9 +472,8 @@ void run_script(CommandHolder* holders) {
   for (int i = 0; (type = get_command_holder_type(holders[i])) != EOC; ++i)
     create_process(holders[i], &myPidQue);
 
-  //Creates a new QuashJob variabe to store the new job
-  ++jobCount;
-  QuashJob myJob = {.jobID = jobCount, .pids = myPidQue, .cmd = "Test String"}; //This is incorrect, need the string for the cmd
+  
+
 
   if (!(holders[0].flags & BACKGROUND)) {
     // Not a background Job
@@ -481,10 +492,15 @@ void run_script(CommandHolder* holders) {
     // A background job.
     // TODO: Push the new job to the job queue
     //IMPLEMENT_ME();
+
+    //Creates a new QuashJob variabe to store the new job
+    ++jobCount;
+    QuashJob myJob = {.jobID = jobCount, .pids = myPidQue, .cmd = "Test String"}; //This is incorrect, need the string for the cmd
     
     push_back_jobQue(&myJobQue, myJob); //Adds current job to the queue
 
     // TODO: Once jobs are implemented, uncomment and fill the following line
-    print_job_bg_start(myJob.jobID, peek_front_pidQue(&myJob.pids), myJob.cmd);
+    if (!is_empty_pidQue(&myJob.pids))
+      print_job_bg_start(myJob.jobID, peek_front_pidQue(&myJob.pids), myJob.cmd);
   }
 }
