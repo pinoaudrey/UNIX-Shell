@@ -10,6 +10,7 @@
 #include "execute.h"
 
 #include <stdio.h>
+#include <signal.h>
 
 #include "quash.h"
 #include "deque.h"
@@ -268,6 +269,7 @@ void run_kill(KillCommand cmd) {
     }
   }
   
+  
 }
 
 
@@ -509,7 +511,7 @@ void run_script(CommandHolder* holders) {
 
     //Creates a new QuashJob variabe to store the new job
     ++jobCount;
-    QuashJob myJob = {.jobID = jobCount, .pids = myPidQue, .cmd = "Test String"}; //This is incorrect, need the string for the cmd
+    QuashJob myJob = {.jobID = jobCount, .pids = myPidQue, .cmd = get_command_string()}; //This is incorrect, need the string for the cmd
     
     push_back_jobQue(&myJobQue, myJob); //Adds current job to the queue
 
