@@ -251,17 +251,17 @@ void run_kill(KillCommand cmd) {
   int job_id = cmd.job;
 
   // TODO: Remove warning silencers
-  (void) signal; // Silence unused variable warning
-  (void) job_id; // Silence unused variable warning
+  //(void) signal; // Silence unused variable warning
+  //(void) job_id; // Silence unused variable warning
 
   // TODO: Kill all processes associated with a background job
-  IMPLEMENT_ME();
+  //IMPLEMENT_ME();
 
   for (int i = 0; i < length_jobQue(&myJobQue); ++i) { //Iterate through the job list
     QuashJob currJob = pop_front_jobQue(&myJobQue); //get the current QuashJob
     if (currJob.jobID == job_id) { // if the currJob is the job we would like to kill
       for (int i = 0; i < length_pidQue(&currJob.pids); ++i) { //iterate through the job's pidQue
-        kill(pop_back_pidQue(&currJob.pids)); //kills each process in the job
+        kill(pop_back_pidQue(&currJob.pids), signal); //kills each process in the job
       }
     } else { //if the currJob isn't the job we want to kill
         push_back_jobQue(&myJobQue, currJob);
@@ -432,6 +432,7 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
 
   if (pid==0) {
     child_run_command(holder.cmd);
+    exit(0);
   } else if (pid > 0) {
     parent_run_command(holder.cmd);
     push_back_pidQue(parentPidQue, pid);
