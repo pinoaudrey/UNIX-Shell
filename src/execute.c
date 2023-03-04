@@ -11,10 +11,15 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <fcntl.h>
+
 
 #include "quash.h"
 #include "deque.h"
 
+static int globalPipes[2][2];
+static int prevPipe = -1;
+static int nextPipe = 0;
 
 IMPLEMENT_DEQUE(pidQue, pid_t)
 IMPLEMENT_DEQUE(jobQue, QuashJob)
@@ -423,30 +428,42 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
   (void) r_out; // Silence unused variable warning
   (void) r_app; // Silence unused variable warning
   
-  int status;
-  pid_t pid;
-  int pPipe[2], cPipe[2];
+  if(p_out){
+    pipe(globalPipes[nextPipe]);
+  }
+  pid_t pid_t = fork();
+  int fd;
 
-  pipe(pPipe);
-  pipe(cPipe);
-
-  pid = fork();
-
-  if (pid==0) {
+  if (pid_t == 0) { //child
+    if(p_out){
+      dup2(globalPipes[nextPipe][1], STDOUT_FILENO);
+      close(globalPipes[nextPipe][0]);
+    }
+    if(p_in){
+      dup2(globalPipes[prevPipe][0], STDIN_FILENO);
+      close(globalPipes[prevPipe][1]);
+    }
     child_run_command(holder.cmd);
     exit(0);
-  } else if (pid > 0) {
+  }
+  else if (pid_t > 0) { //parent
+    int status;
+    waitpid(-1, &status, 0); //wait for child to finish
+    if(p_in){
+      close(globalPipes[prevPipe][0]);
+    }
+    if(p_out){
+      close(globalPipes[nextPipe][1]);
+    }
+    nextPipe = (nextPipe + 1) % 2; //switch pipes - after child writes to nextPipe,  parent process switches nextPipe to point to the other pipe
+    prevPipe = (prevPipe + 1) % 2; //switch pipes
     parent_run_command(holder.cmd);
-    push_back_pidQue(parentPidQue, pid);
-  } 
-
-  
-  // TODO: Setup pipes, redirects, and new process
-  //IMPLEMENT_ME();
-
-  //parent_run_command(holder.cmd); // This should be done in the parent branch of
-                                  // a fork
-  //child_run_command(holder.cmd); // This should be done in the child branch of a fork
+    return;
+  }
+  else {
+    fprintf(stderr, "Fork failed");
+    exit(1);
+  }
 }
 
 // Run a list of commands
