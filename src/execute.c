@@ -422,8 +422,8 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
                                                // is true
 
   // TODO: Remove warning silencers
-  (void) p_in;  // Silence unused variable warning
-  (void) p_out; // Silence unused variable warning
+  //(void) p_in;  // Silence unused variable warning
+  //(void) p_out; // Silence unused variable warning
   (void) r_in;  // Silence unused variable warning
   (void) r_out; // Silence unused variable warning
   (void) r_app; // Silence unused variable warning
@@ -443,6 +443,24 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
       dup2(globalPipes[prevPipe][0], STDIN_FILENO);
       close(globalPipes[prevPipe][1]);
     }
+    if(r_in){
+      fd = open(holder.redirect_in, O_RDONLY);
+      dup2(fd, STDIN_FILENO);
+      close(fd);
+    }
+    if(r_out){
+      if(r_app){
+        fd = open(holder.redirect_out, O_WRONLY | O_CREAT | O_APPEND, 0666);
+      }
+      else{
+        fd = open(holder.redirect_out, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+      }
+      dup2(fd, STDOUT_FILENO);
+      close(fd);
+    }
+
+
+
     child_run_command(holder.cmd);
     exit(0);
   }
@@ -504,10 +522,6 @@ void run_script(CommandHolder* holders) {
   // Run all commands in the `holder` array
   for (int i = 0; (type = get_command_holder_type(holders[i])) != EOC; ++i)
     create_process(holders[i], &myPidQue);
-
-  
-
-
   if (!(holders[0].flags & BACKGROUND)) {
     // Not a background Job
     // TODO: Wait for all processes under the job to complete
