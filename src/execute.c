@@ -431,10 +431,10 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
   if(p_out){
     pipe(globalPipes[nextPipe]);
   }
-  pid_t pid_t = fork();
+  pid_t pid = fork();
   int fd;
 
-  if (pid_t == 0) { //child
+  if (pid == 0) { //child
     if(p_out){
       dup2(globalPipes[nextPipe][1], STDOUT_FILENO);
       close(globalPipes[nextPipe][0]);
@@ -464,9 +464,9 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
     child_run_command(holder.cmd);
     exit(0);
   }
-  else if (pid_t > 0) { //parent
+  else if (pid > 0) { //parent
     int status;
-    waitpid(-1, &status, 0); //wait for child to finish
+    //waitpid(-1, &status, 0); //wait for child to finish
     if(p_in){
       close(globalPipes[prevPipe][0]);
     }
@@ -476,6 +476,7 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
     nextPipe = (nextPipe + 1) % 2; //switch pipes - after child writes to nextPipe,  parent process switches nextPipe to point to the other pipe
     prevPipe = (prevPipe + 1) % 2; //switch pipes
     parent_run_command(holder.cmd);
+    push_back_pidQue(parentPidQue, pid);
     return;
   }
   else {
