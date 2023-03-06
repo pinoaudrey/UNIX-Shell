@@ -466,7 +466,8 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
   }
   else if (pid > 0) { //parent
     int status;
-    //waitpid(-1, &status, 0); //wait for child to finish
+    if (p_out) 
+      waitpid(-1, &status, 0); //wait for child to finish
     if(p_in){
       close(globalPipes[prevPipe][0]);
     }
