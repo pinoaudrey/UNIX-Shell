@@ -80,8 +80,10 @@ void check_jobs_bg_status() {
   QuashJob currJob; //variable to store the current job in iteration
 
   if (jobQueInitialized) { //just a failsafe to ensure that the jobQue actually exists
+  
+  int lengthQue = length_jobQue(&myJobQue);
 
-    for (int i = 0; i < length_jobQue(&myJobQue); ++i){ //Iterate through all QuashJobs in myJobQue
+    for (int i = 0; i < lengthQue; ++i){ //Iterate through all QuashJobs in myJobQue
 
       currJob = pop_front_jobQue(&myJobQue); //get the curr QuashJob
 
@@ -94,7 +96,7 @@ void check_jobs_bg_status() {
       //print_job(currJob.jobID, peek_front_pidQue(&currJob.pids), currJob.cmd); //test print
 
       bool jobDone = true; //assume the job is done (will be changed in loop if not)
-
+      
       for (int i = 0; i < length_pidQue(&currJob.pids); ++i) {
         int status;
         currPID = pop_front_pidQue(&currJob.pids);
@@ -266,13 +268,18 @@ void run_kill(KillCommand cmd) {
   for (int i = 0; i < length_jobQue(&myJobQue); ++i) { //Iterate through the job list
     QuashJob currJob = pop_front_jobQue(&myJobQue); //get the current QuashJob
     if (currJob.jobID == job_id) { // if the currJob is the job we would like to kill
+    
       for (int i = 0; i < length_pidQue(&currJob.pids); ++i) { //iterate through the job's pidQue
-        kill(pop_back_pidQue(&currJob.pids), signal); //kills each process in the job
+        pid_t currentPID = pop_back_pidQue(&currJob.pids);
+        kill(currentPID, signal); //kills each process in the job
+        push_front_pidQue(&currJob.pids, currentPID);
       }
+      push_back_jobQue(&myJobQue, currJob);
     } else { //if the currJob isn't the job we want to kill
         push_back_jobQue(&myJobQue, currJob);
     }
   }
+  check_jobs_bg_status();
   
   
 }
@@ -466,8 +473,10 @@ void create_process(CommandHolder holder, pidQue * parentPidQue) {
   }
   else if (pid > 0) { //parent
     int status;
-    if (p_out) 
-      waitpid(-1, &status, 0); //wait for child to finish
+    //waitpid(-1, &status, 0); //wait for child to finish
+    if(p_out || p_in){
+        waitpid(-1, &status, 0);
+    }
     if(p_in){
       close(globalPipes[prevPipe][0]);
     }
